@@ -1,0 +1,89 @@
+config:
+  target: "https://focusfeatures.dev.raptor.nbcuniversal.com"
+  plugins:
+    lambda:
+      function: "artillery-load-test"  # Lambda function name
+      region: "us-west-2"  # AWS region
+      memory: 512
+  phases:
+    - duration: 60  # Test duration in seconds (5 minutes)
+      arrivalRate: 100  # 600 user arrival per second
+      rampTo: 6000  # Maintain a constant arrival rate
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  #ensure:
+    #maxErrors: 10  # Stop test if more than 10 errors occur
+
+scenarios:
+  - name: "API and Page Load Test"
+    flow:
+      - get:
+          url: "/api/fandango"
+          qs:
+            title: "Piece By Piece"
+            lat: "{{ randomFloat(-90, 90) }}"
+            long: "{{ randomFloat(-180, 180) }}"
+            startDate: "{{ currentDate }}"  # Start date in YYYY-MM-DD format
+            endDate: "{{ endDate }}"  # End date +13 days from today
+            filmId: 231
+            fandangoInternalId: "j7L2gLw5"
+          expect:
+            statusCode: 200  # Validate successful response
+          log: true  # Enable logging for debugging
+
+      - get:
+          url: "/piece-by-piece"
+          qs:
+            tiktok: "{{ randomString }}"  # Random string for query
+          expect:
+            statusCode: 200
+
+hooks:
+  afterResponse: |
+    ({ response, statusCode }) => {
+      if (statusCode === 200) {
+        console.log("Response OK");
+      } else {
+        console.error(`Error: Unexpected status ${statusCode}`);
+      }
+    }
+
+  afterScenario: |
+    ({ scenarioName, success }) => {
+      if (!success) {
+        console.warn(`Warning: Scenario "${scenarioName}" encountered issues.`);
+      } else {
+        console.log(`Scenario "${scenarioName}" completed successfully.`);
+      }
+    }
+
+processor:
+  currentDate: |
+    function currentDate() {
+      const date = new Date();
+      return date.toISOString().split('T')[0];  // Format: YYYY-MM-DD
+    }
+
+  endDate: |
+    function endDate() {
+      const date = new Date();
+      date.setDate(date.getDate() + 13);  // Add 13 days
+      return date.toISOString().split('T')[0];  // Format: YYYY-MM-DD
+    }
+
+  randomFloat: |
+    function randomFloat(min, max) {
+      return (Math.random() * (max - min) + min).toFixed(6);  // 6 decimal places for precision
+    }
+
+  randomString: |
+    function randomString() {
+      const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+      return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    }
+
+artillery-plugin-reporting:
+  enabled: true
+  output: "./reports/load-test-report.json"
+  format: "json"

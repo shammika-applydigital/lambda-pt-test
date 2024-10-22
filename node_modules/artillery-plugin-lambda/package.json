@@ -1,0 +1,16 @@
+{
+  "name": "artillery-plugin-lambda",
+  "version": "0.0.1",
+  "description": "Send Artillery metrics to an AWS Lambda function",
+  "author": "Dennis Martinez",
+  "license": "MIT",
+  "homepage": "https://github.com/dennmart/artillery-plugin-lambda#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dennmart/artillery-plugin-lambda.git"
+  },
+  "dependencies": {
+    "@aws-sdk/client-lambda": "^3.20.0",
+    "debug": "^4.3.2"
+  }
+}
